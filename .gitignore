@@ -5,4 +5,5 @@ venv/
 *.rdb
 db/
 .idea
-
+.data/
+/data
