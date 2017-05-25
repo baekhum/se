@@ -2,8 +2,6 @@
 import os
 import pprint
 import math
-import numpy as np
-import scipy.sparse as sp
 import logging
 from collections import defaultdict
 
@@ -148,8 +146,8 @@ class TfidfRank(object):
         self.stop_words = stop_words
         self.vocabulary = {}
         self.ft_matrix = []
-        self.ifd_diag_matrix = []
-        self.tf_idf_matrix = []
+        # self.ifd_diag_matrix = []
+        # self.tf_idf_matrix = []
 
         self.ft_matrix_hum = {}
         self.tf_idf_matrix_hum = {}
@@ -172,7 +170,7 @@ class TfidfRank(object):
         n_terms = len(self.vocabulary)
         n_docs = len(objects)
 
-        ft_matrix = sp.lil_matrix((n_docs, n_terms), dtype=np.float16)
+        # ft_matrix = sp.lil_matrix((n_docs, n_terms), dtype=np.float16)
 
         logging.info("[Ranking] Vocabulary assembled with terms count %s", n_terms)
 
@@ -182,14 +180,15 @@ class TfidfRank(object):
             for word in indexable.words_generator(self.stop_words):
                 word_index_in_vocabulary = self.vocabulary[word]
                 doc_word_count = indexable.count_for_word(word)
-                ft_matrix[index, word_index_in_vocabulary] = doc_word_count
+                # ft_matrix[index, word_index_in_vocabulary] = doc_word_count
 
                 term_info = (index, doc_word_count)
                 if word in self.ft_matrix_hum:
                     self.ft_matrix_hum[word].append(term_info)
                 else:
                     self.ft_matrix_hum.update({word: [term_info]})
-        self.ft_matrix = ft_matrix.tocsc()
+
+        # self.ft_matrix = ft_matrix.tocsc()
 
         norm_hum = {}
         for term, values in self.ft_matrix_hum.iteritems():
@@ -203,7 +202,7 @@ class TfidfRank(object):
                     norm_hum.update({doc_id: 0})
                 norm_hum[doc_id] += (tf_idf ** 2)
 
-        temp = {}
+        # temp = {}
         for term, values in self.ft_matrix_hum.iteritems():
             df = len(values) + 1
             idf = math.log(float(n_docs + 1) / df) + 1.0
@@ -212,7 +211,7 @@ class TfidfRank(object):
                 tf_idf = value[1] * idf
 
                 normal_tf_idf = tf_idf * (1.0 / math.sqrt(norm_hum[doc_id]))
-                temp.update({doc_id: (1.0 / math.sqrt(norm_hum[doc_id]))})
+                # temp.update({doc_id: (1.0 / math.sqrt(norm_hum[doc_id]))})
 
                 if term in self.tf_idf_matrix_hum:
                     self.tf_idf_matrix_hum[term].update({doc_id: normal_tf_idf})
@@ -225,29 +224,29 @@ class TfidfRank(object):
         # compute idf with smoothing
         # print pprint.pprint(np.diff(self.ft_matrix.indptr)), pprint.pprint(self.ft_matrix.indptr), self.smoothing
 
-        df = np.diff(self.ft_matrix.indptr) + self.smoothing
+        # df = np.diff(self.ft_matrix.indptr) + self.smoothing
         n_docs_smooth = n_docs + self.smoothing
 
         # create diagonal matrix to be multiplied with ftz
-        idf = np.log(float(n_docs_smooth) / df) + 1.0
-        self.ifd_diag_matrix = sp.spdiags(idf, diags=0, m=n_terms, n=n_terms)
+        # idf = np.log(float(n_docs_smooth) / df) + 1.0
+        # self.ifd_diag_matrix = sp.spdiags(idf, diags=0, m=n_terms, n=n_terms)
 
         # compute tf-idf
-        self.tf_idf_matrix = self.ft_matrix * self.ifd_diag_matrix
-        self.tf_idf_matrix = self.tf_idf_matrix.tocsr()
+        # self.tf_idf_matrix = self.ft_matrix * self.ifd_diag_matrix
+        # self.tf_idf_matrix = self.tf_idf_matrix.tocsr()
 
         # compute td-idf normalization
-        norm = self.tf_idf_matrix.tocsr(copy=True)
-        norm.data **= 2
-        norm = norm.sum(axis=1)
-        n_nzeros = np.where(norm > 0)
-        norm[n_nzeros] = 1.0 / np.sqrt(norm[n_nzeros])
-        norm = np.array(norm).T[0]
-        sp.sparsetools.csr_scale_rows(self.tf_idf_matrix.shape[0],
-                                      self.tf_idf_matrix.shape[1],
-                                      self.tf_idf_matrix.indptr,
-                                      self.tf_idf_matrix.indices,
-                                      self.tf_idf_matrix.data, norm)
+        # norm = self.tf_idf_matrix.tocsr(copy=True)
+        # norm.data **= 2
+        # norm = norm.sum(axis=1)
+        # n_nzeros = np.where(norm > 0)
+        # norm[n_nzeros] = 1.0 / np.sqrt(norm[n_nzeros])
+        # norm = np.array(norm).T[0]
+        # sp.sparsetools.csr_scale_rows(self.tf_idf_matrix.shape[0],
+        #                               self.tf_idf_matrix.shape[1],
+        #                               self.tf_idf_matrix.indptr,
+        #                               self.tf_idf_matrix.indices,
+        #                               self.tf_idf_matrix.data, norm)
 
 
     def __build_vocabulary(self, objects):
@@ -457,20 +456,22 @@ class SearchEngine(object):
 
         for doc_index in docs_indices:
             indexable = self.objects[doc_index]
-            doc_score = self.rank.compute_rank(doc_index, terms)
+            # doc_score = self.rank.compute_rank(doc_index, terms)
             doc_score_hum = self.rank.compute_ran_hum(doc_index, terms)
 
-            result = IndexableResult(doc_score, indexable)
+            # result = IndexableResult(doc_score, indexable)
             result_hum = IndexableResult(doc_score_hum, indexable)
-            search_results.append(result)
+            # search_results.append(result)
             search_results_hum.append(result_hum)
 
-        search_results.sort(key=lambda x: x.score, reverse=True)
+        # search_results.sort(key=lambda x: x.score, reverse=True)
         search_results_hum.sort(key=lambda x: x.score, reverse=True)
 
-        for result in search_results_hum[:n_results]:
-            print 'hum result: ', result
-        return search_results[:n_results]
+        # for result in search_results_hum[:n_results]:
+        #     print 'hum result: ', result
+        # return search_results[:n_results]
+
+        return search_results_hum[:n_results]
 
 
     def count(self):
